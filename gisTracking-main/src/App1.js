@@ -311,7 +311,6 @@ export default function App() {
       </Marker>
     ))}
   </MarkerClusterGroup>
-  </MyComponent>
 </MapContainer>
 
       

@@ -1,59 +1,67 @@
 from flask import Flask, jsonify, request
-from epanettools.epanettools import EPANetSimulation, Node
 from flask_cors import CORS
 import os
 import tempfile
+from typing import Dict, List, Set, Tuple
 
 app = Flask(__name__)
 CORS(app)
 
-# Function to get nodes to skip based on elevation threshold
-def get_skip_nodes_from_elevation(file_path, elevation_threshold):
-    skip_nodes = []
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        junctions_section = False
-        for line in lines:
-            if line.strip() == '[JUNCTIONS]':
-                junctions_section = True
+SECTION_START = '['
+
+def _is_section_header(line: str) -> bool:
+    return line.strip().startswith(SECTION_START) and line.strip().endswith(']')
+
+def _read_inp_sections(file_path: str) -> Dict[str, List[str]]:
+    sections: Dict[str, List[str]] = {}
+    current: str = ''
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith(';'):
                 continue
-            if junctions_section and line.strip() == '':
-                break
-            if junctions_section and line.strip() and not line.startswith(';'):
-                parts = line.split()
-                if len(parts) > 1 and parts[1].replace('.', '', 1).isdigit():
-                    if float(parts[1]) > elevation_threshold:
-                        skip_nodes.append(parts[0])
+            if _is_section_header(line):
+                current = line.strip('[]').upper()
+                sections.setdefault(current, [])
+                continue
+            if current:
+                sections[current].append(line)
+    return sections
+
+def get_skip_nodes_from_elevation(file_path: str, elevation_threshold: float) -> Set[str]:
+    sections = _read_inp_sections(file_path)
+    skip_nodes: Set[str] = set()
+    for line in sections.get('JUNCTIONS', []):
+        if line.startswith(';'):
+            continue
+        parts = line.split()
+        if len(parts) >= 2:
+            try:
+                elevation = float(parts[1])
+                if elevation > elevation_threshold:
+                    skip_nodes.add(parts[0])
+            except ValueError:
+                continue
     return skip_nodes
 
-# Function to create graph and pressure data from EPANet file
-def create_graph_from_epanet(file_path, elevation_threshold=100):
+def create_graph_from_inp(file_path: str, elevation_threshold: float = 100.0) -> Tuple[Dict[str, List[Tuple[str, float]]], Dict[str, float]]:
+    sections = _read_inp_sections(file_path)
     skip_nodes = get_skip_nodes_from_elevation(file_path, elevation_threshold)
+    node_neighbors: Dict[str, List[Tuple[str, float]]] = {}
 
-    es = EPANetSimulation(file_path)
-    es.run()
+    for line in sections.get('PIPES', []):
+        parts = line.split()
+        if len(parts) >= 3:
+            n1, n2 = parts[1], parts[2]
+            if n1 in skip_nodes or n2 in skip_nodes:
+                continue
+            node_neighbors.setdefault(n1, []).append((n2, 1.0))
+            node_neighbors.setdefault(n2, []).append((n1, 1.0))
 
-    node_neighbors = {}
-    pressure_data = {}
-    
-    for node_index, node in es.network.nodes.items():
-        pressure = node.results[Node.value_type['EN_PRESSURE']]
-        pressure_data[node.id] = pressure
-
-    for link in es.network.links.values():
-        start_node_id = link.start.id
-        end_node_id = link.end.id
-
-        if start_node_id in skip_nodes or end_node_id in skip_nodes:
-            continue
-
-        node_neighbors.setdefault(start_node_id, []).append((end_node_id, 1.0))
-        node_neighbors.setdefault(end_node_id, []).append((start_node_id, 1.0))
-        
-    return node_neighbors, pressure_data
+    return node_neighbors, {}
 
 # Function to find the nearest neighbor for each node
-def find_nearest_neighbors(graph):
+def find_nearest_neighbors(graph: Dict[str, List[Tuple[str, float]]]) -> Dict[str, str]:
     nearest = {}
     for node_id, edges in graph.items():
         if edges:
@@ -62,28 +70,28 @@ def find_nearest_neighbors(graph):
     return nearest
 
 # Function to identify initial sensor nodes
-def identify_initial_sensor_nodes(nearest):
+def identify_initial_sensor_nodes(nearest: Dict[str, str]) -> Set[str]:
     counts = {}
     for n in nearest.values():
         counts[n] = counts.get(n, 0) + 1
 
-    sensors = set()
+    sensors: Set[str] = set()
     for node, count in counts.items():
         if count > 1:
             sensors.add(node)
     return sensors
 
 # Function to identify left-out nodes
-def identify_left_out_nodes(nearest, sensors):
-    left_out_nodes = set()
+def identify_left_out_nodes(nearest: Dict[str, str], sensors: Set[str]) -> Set[str]:
+    left_out_nodes: Set[str] = set()
     for node, neighbor in nearest.items():
         if neighbor not in sensors:
             left_out_nodes.add(node)
     return left_out_nodes
 
 # Function to remove redundant sensor nodes
-def remove_redundant_sensors(graph, sensors):
-    redundant = set()
+def remove_redundant_sensors(graph: Dict[str, List[Tuple[str, float]]], sensors: Set[str]) -> Set[str]:
+    redundant: Set[str] = set()
     for s in sensors:
         is_redundant = True
         for neighbor, _ in graph[s]:
@@ -97,15 +105,15 @@ def remove_redundant_sensors(graph, sensors):
     return sensors
 
 # Function to map non-sensor nodes to sensor nodes
-def map_to_sensors(nearest, sensors):
-    mapping = {}
+def map_to_sensors(nearest: Dict[str, str], sensors: Set[str]) -> Dict[str, str]:
+    mapping: Dict[str, str] = {}
     for node, neighbor in nearest.items():
         if node not in sensors:
             mapping[node] = nearest[node]
     return mapping
 
-def identify_sensor_nodes(file_path):
-    node_neighbors, _ = create_graph_from_epanet(file_path)
+def identify_sensor_nodes(file_path: str) -> Set[str]:
+    node_neighbors, _ = create_graph_from_inp(file_path)
 
     nearest_neighbors = find_nearest_neighbors(node_neighbors)
     initial_sensors = identify_initial_sensor_nodes(nearest_neighbors)
@@ -114,9 +122,9 @@ def identify_sensor_nodes(file_path):
     sensors = remove_redundant_sensors(node_neighbors, sensors)
     return sensors
 
-def main(file_path):
+def main(file_path: str):
     sensors = identify_sensor_nodes(file_path)
-    node_neighbors, _ = create_graph_from_epanet(file_path)
+    node_neighbors, _ = create_graph_from_inp(file_path)
 
     nearest_neighbors = find_nearest_neighbors(node_neighbors)
     sensors = remove_redundant_sensors(node_neighbors, sensors)
@@ -148,7 +156,7 @@ def sensor_allocation():
 
     try:
         sensors = identify_sensor_nodes(temp_file.name)
-        node_neighbors, _ = create_graph_from_epanet(temp_file.name)
+        node_neighbors, _ = create_graph_from_inp(temp_file.name)
 
         nearest_neighbors = find_nearest_neighbors(node_neighbors)
         sensors = remove_redundant_sensors(node_neighbors, sensors)

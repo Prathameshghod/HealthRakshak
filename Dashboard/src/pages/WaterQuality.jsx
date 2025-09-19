@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import './WaterQuality.css';
 import { FaUpload, FaSpinner } from 'react-icons/fa';
 // import { BsFillBarChartFill } from 'react-icons/bs';
-
 function WaterQuality() {
   const [file, setFile] = useState(null);
   const [predictions, setPredictions] = useState([]);
@@ -73,7 +72,6 @@ function WaterQuality() {
           )}
         </div>
       </main>
-   
     </div>
   );
 }

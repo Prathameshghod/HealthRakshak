@@ -31,7 +31,7 @@ const LeakageDetection = () => {
       }
       const data = await response.json();
       setPredictions(data);
-      if (data.some(prediction => prediction.leak_detected)) {
+      if (data.some((prediction) => prediction.leak_detected)) {
         setShowModal(true);
       }
     } catch (error) {
@@ -66,30 +66,33 @@ const LeakageDetection = () => {
             {predictions
               .slice()
               .sort((a, b) => ((b.leak_detected ? 1 : 0) - (a.leak_detected ? 1 : 0)))
-              .map((prediction, index) => (
-                <tr
-                  key={index}
-                  className={prediction.leak_detected ? 'bg-red-500 text-white' : ((index % 2 === 0) ? 'bg-white' : 'bg-gray-200')}
-                >
-                <td className="py-2 px-4 border-b">{prediction.sensor_node}</td>
-                <td className="py-2 px-4 border-b">{prediction.leak_detected ? 'Yes' : 'No'}</td>
-                </tr>
-              ))}
+              .map((prediction, index) => {
+                const isEven = (index % 2 === 0);
+                let rowClass = 'bg-gray-200';
+                if (isEven) rowClass = 'bg-white';
+                if (prediction.leak_detected) rowClass = 'bg-red-500 text-white';
+                return (
+                  <tr key={index} className={rowClass}>
+                    <td className="py-2 px-4 border-b">{prediction.sensor_node}</td>
+                    <td className="py-2 px-4 border-b">{prediction.leak_detected ? 'Yes' : 'No'}</td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       )}
 
-{showModal && (
-  <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white p-4 rounded shadow-lg">
-      <h2 className="text-lg font-bold">Leak Detected!</h2>
-      <p>One or more sensor nodes have detected a leak.</p>
-      <button type="button" onClick={() => setShowModal(false)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4">
-        Close
-      </button>
-    </div>
-  </div>
-)}
+      {showModal && (
+        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-4 rounded shadow-lg">
+            <h2 className="text-lg font-bold">Leak Detected!</h2>
+            <p>One or more sensor nodes have detected a leak.</p>
+            <button type="button" onClick={() => setShowModal(false)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

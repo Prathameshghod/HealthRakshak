@@ -1,8 +1,35 @@
-// FireApp.js
+
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import { collection, addDoc, doc ,setDoc ,getDocs} from 'firebase/firestore';
 import { firestore } from './firebase';
+
+// Fetch all polylines from Firestore 'pipelines' collection
+export const fetchPolylinesFromFirestore = async () => {
+  try {
+    const polylinesCollection = collection(firestore, 'pipelines');
+    const querySnapshot = await getDocs(polylinesCollection);
+    const polylinesArray = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // If the polyline is stored as {coordinates: [{latitude, longitude}, ...]}, convert to [[lat, lng], ...]
+      if (data.coordinates && Array.isArray(data.coordinates)) {
+        polylinesArray.push(
+          data.coordinates.map(coord => [coord.latitude, coord.longitude])
+        );
+      } else if (Array.isArray(data) && data.length === 2 && Array.isArray(data[0]) && Array.isArray(data[1])) {
+        // Already in [[lat, lng], [lat, lng]] format
+        polylinesArray.push(data);
+      } else if (Array.isArray(data)) {
+        polylinesArray.push(data);
+      }
+    });
+    return polylinesArray;
+  } catch (error) {
+    console.error('Error fetching polylines from Firestore:', error);
+    return [];
+  }
+};
 
 export const uploadJSONToFirestore = async (jsonData) => {
   try {
