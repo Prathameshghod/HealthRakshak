@@ -45,6 +45,365 @@
 
     const [currentZoom, setCurrentZoom] = useState(20);
     const CLUSTERING_ZOOM_THRESHOLD = 18; // Cluster below zoom 18, uncluster at 18+
+    
+    // State for polygon popup/sidebar
+    const [selectedPolygon, setSelectedPolygon] = useState(null);
+    const [showPolygonInfo, setShowPolygonInfo] = useState(false);
+
+    // Polygon data with dummy outbreak risk information - matching the screenshot colors
+    const polygonData = [
+      {
+        id: "polygon-1",
+        name: "Zone A - North Sector",
+        positions: [
+          [21.072451, 79.067663], // Node23
+          [21.072551, 79.069261], // Node67
+          [21.072176, 79.069309], // Node68
+          [21.070994, 79.069374], // Node73
+          [21.070689, 79.069374], // Node80
+          [21.070659, 79.068746], // Node79
+          [21.070479, 79.067856], // Node87
+          [21.070015, 79.067354], // Node11
+          [21.072451, 79.067663], // Node23 again to close
+        ],
+        color: 'orange',
+        fillColor: 'orange',
+        averageOutbreakRisk: 65.5,
+        recentReportedCases: 3,
+        weatherCondition: "Light rainfall",
+        priorityLevel: "Medium",
+        waterQuality: "pH slightly unsafe",
+        recommendedAction: "Monitor water source"
+      },
+      {
+        id: "polygon-2", 
+        name: "Zone B - High Risk Area",
+        positions: [
+          [21.072571, 79.066826], // Node24
+          [21.072451, 79.067663], // Node23
+          [21.072095, 79.067609], // Node38
+          [21.071775, 79.067550], // Node37
+          [21.071395, 79.067521], // Node15
+          [21.071435, 79.067078], // Node36
+          [21.071495, 79.066676], // Node35
+          [21.071880, 79.066724], // Node34
+          [21.072236, 79.066788], // Node25
+        ],
+        color: 'red',
+        fillColor: 'red',
+        averageOutbreakRisk: 87.4,
+        recentReportedCases: 8,
+        weatherCondition: "Storm conditions",
+        priorityLevel: "High",
+        waterQuality: "Contaminated - immediate action needed",
+        recommendedAction: "Emergency response required"
+      },
+      {
+        id: "polygon-3",
+        name: "Zone C - South Sector", 
+        positions: [
+          [21.070015, 79.067354], // Node11
+          [21.070479, 79.067856], // Node87
+          [21.070659, 79.068746], // Node79
+          [21.070689, 79.069374], // Node80
+          [21.070614, 79.069658], // Node81
+          [21.070534, 79.070559], // Node82
+          [21.070544, 79.071267], // Node78
+          [21.069708, 79.072185], // Node93
+          [21.069568, 79.071112], // Node94
+          [21.069860, 79.068613], // Node16
+          [21.070015, 79.067354], // Node11 (close polygon)
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 8.7,
+        recentReportedCases: 1,
+        weatherCondition: "Partly cloudy",
+        priorityLevel: "Low",
+        waterQuality: "Good quality",
+        recommendedAction: "Routine check"
+      },
+      {
+        id: "polygon-4",
+        name: "Zone D - Upper Right",
+        positions: [
+          [21.073317, 79.069218], // Node63
+          [21.073357, 79.069594], // Node64
+          [21.073392, 79.069969], // Node65
+          [21.073412, 79.070302], // Node66
+          [21.072281, 79.070420], // Node71
+          [21.072246, 79.070077], // Node70
+          [21.072231, 79.069690], // Node69
+          [21.072551, 79.069261], // Node67
+          [21.073317, 79.069218], // Node63 again to close
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 15.2,
+        recentReportedCases: 0,
+        weatherCondition: "Clear skies",
+        priorityLevel: "Low",
+        waterQuality: "Excellent quality",
+        recommendedAction: "Continue monitoring"
+      },
+      {
+        id: "polygon-5",
+        name: "Zone E - Central Orange",
+        positions: [
+          [21.072551, 79.069261], // Node67
+          [21.072231, 79.069690], // Node69
+          [21.070944, 79.069787], // Node74
+          [21.070614, 79.069658], // Node81
+          [21.070689, 79.069374], // Node80
+          [21.070994, 79.069374], // Node73
+          [21.072176, 79.069309], // Node68
+          [21.072551, 79.069261], // Node67 again to close
+        ],
+        color: 'orange',
+        fillColor: 'orange',
+        averageOutbreakRisk: 42.3,
+        recentReportedCases: 2,
+        weatherCondition: "Heavy rainfall",
+        priorityLevel: "Medium",
+        waterQuality: "pH levels concerning",
+        recommendedAction: "Increase monitoring frequency"
+      },
+      {
+        id: "polygon-6",
+        name: "Zone F - South Green",
+        positions: [
+          [21.072231, 79.069690], // Node69
+          [21.072246, 79.070077], // Node70
+          [21.072281, 79.070420], // Node71
+          [21.071580, 79.070500], // Node72
+          [21.070819, 79.070763], // Node77
+          [21.070544, 79.071267], // Node78
+          [21.070534, 79.070559], // Node82
+          [21.070614, 79.069658], // Node81
+          [21.070944, 79.069787], // Node74
+          [21.072231, 79.069690], // Node69 again to close
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 12.8,
+        recentReportedCases: 0,
+        weatherCondition: "Clear skies",
+        priorityLevel: "Low",
+        waterQuality: "Good quality",
+        recommendedAction: "Continue routine checks"
+      },
+      {
+        id: "polygon-7",
+        name: "Zone G - Central Large",
+        positions: [
+          [21.071395, 79.067521], // Node15
+          [21.070015, 79.067354], // Node11
+          [21.067926, 79.066375], // Node62
+          [21.067962, 79.066011], // Node14
+          [21.067991, 79.065570], // Node61
+          [21.068086, 79.064541], // Node60
+          [21.068407, 79.064586], // Node8
+          [21.068837, 79.064682], // Node7
+          [21.069256, 79.064727], // Node5
+          [21.070308, 79.065248], // Node2
+          [21.070579, 79.066300], // Node57
+          [21.070829, 79.066595], // Node21
+          [21.071495, 79.066676], // Node35
+          [21.071435, 79.067078], // Node36
+          [21.071395, 79.067521], // Node15 again to close
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 5.1,
+        recentReportedCases: 0,
+        weatherCondition: "Clear skies",
+        priorityLevel: "Low",
+        waterQuality: "Excellent quality",
+        recommendedAction: "Maintain current monitoring"
+      },
+      {
+        id: "polygon-8",
+        name: "Zone H - East Orange",
+        positions: [
+          [21.069256, 79.064727], // Node5
+          [21.070394, 79.064868], // Node52
+          [21.071019, 79.064964], // Node53
+          [21.071179, 79.065055], // Node44
+          [21.071665, 79.065511], // Node17
+          [21.071250, 79.065469], // Node18
+          [21.070747, 79.065341], // Node1
+          [21.070308, 79.065248], // Node2
+          [21.069256, 79.064727], // Node5 again to close
+        ],
+        color: 'orange',
+        fillColor: 'orange',
+        averageOutbreakRisk: 38.9,
+        recentReportedCases: 1,
+        weatherCondition: "Moderate rainfall",
+        priorityLevel: "Medium",
+        waterQuality: "Slightly elevated contamination",
+        recommendedAction: "Investigate source"
+      },
+      {
+        id: "polygon-9",
+        name: "Zone I - High Risk Red",
+        positions: [
+          [21.071665, 79.065511], // Node17
+          [21.071635, 79.065903], // Node33
+          [21.071565, 79.066305], // Node19
+          [21.071495, 79.066676], // Node35
+          [21.071096, 79.066184], // Node95
+          [21.070747, 79.065341], // Node1
+          [21.071665, 79.065511], // Node17 (close polygon)
+        ],
+        color: 'red',
+        fillColor: 'red',
+        averageOutbreakRisk: 92.1,
+        recentReportedCases: 12,
+        weatherCondition: "Severe weather",
+        priorityLevel: "High",
+        waterQuality: "Severely contaminated",
+        recommendedAction: "Immediate evacuation and treatment"
+      },
+      {
+        id: "polygon-10",
+        name: "Zone J - West Orange",
+        positions: [
+          [21.070747, 79.065341], // Node1
+          [21.071096, 79.066184], // Node95
+          [21.071495, 79.066676], // Node35
+          [21.070829, 79.066595], // Node21
+          [21.070579, 79.066300], // Node57
+          [21.070308, 79.065248], // Node2
+          [21.070747, 79.065341], // Node1 (close polygon)
+        ],
+        color: 'orange',
+        fillColor: 'orange',
+        averageOutbreakRisk: 28.3,
+        recentReportedCases: 1,
+        weatherCondition: "Light rain",
+        priorityLevel: "Medium",
+        waterQuality: "Good quality",
+        recommendedAction: "Standard monitoring"
+      },
+      {
+        id: "polygon-11",
+        name: "Zone K - Safe Area",
+        positions: [
+          [21.071775, 79.064771], // Node40
+          [21.071845, 79.064385], // Node41
+          [21.071310, 79.064288], // Node42
+          [21.071235, 79.064664], // Node43
+          [21.071775, 79.064771], // Node40 (close polygon)
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 3.2,
+        recentReportedCases: 0,
+        weatherCondition: "Clear skies",
+        priorityLevel: "Low",
+        waterQuality: "Excellent quality",
+        recommendedAction: "Maintain current monitoring"
+      },
+      {
+        id: "polygon-12",
+        name: "Zone L - Industrial Area",
+        positions: [
+          [21.071665, 79.065511], // Node17
+          [21.071720, 79.065147], // Node39
+          [21.071775, 79.064771], // Node40
+          [21.071235, 79.064664], // Node43
+          [21.071019, 79.064964], // Node53
+          [21.071665, 79.065511], // Node17 (close polygon)
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 18.3,
+        recentReportedCases: 1,
+        weatherCondition: "Light rain",
+        priorityLevel: "Low",
+        waterQuality: "Good quality",
+        recommendedAction: "Standard monitoring"
+      },
+      {
+        id: "polygon-13",
+        name: "Zone M - Residential North",
+        positions: [
+          [21.072211, 79.063371], // Node45
+          [21.072211, 79.063532], // Node46
+          [21.072171, 79.064144], // Node47
+          [21.071845, 79.064385], // Node41
+          [21.071310, 79.064288], // Node42
+          [21.071204, 79.063972], // Node49
+          [21.071159, 79.063505], // Node48
+          [21.072211, 79.063371], // Node45 (close polygon)
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 7.5,
+        recentReportedCases: 0,
+        weatherCondition: "Clear skies",
+        priorityLevel: "Low",
+        waterQuality: "Good quality",
+        recommendedAction: "Continue routine checks"
+      },
+      {
+        id: "polygon-14",
+        name: "Zone N - Critical Red",
+        positions: [
+          [21.072576, 79.064600], // Node55
+          [21.072911, 79.064573], // Node54
+          [21.072756, 79.065672], // Node28
+          [21.072416, 79.065629], // Node29
+          [21.072576, 79.064600], // Node55 (closing)
+        ],
+        color: 'red',
+        fillColor: 'red',
+        averageOutbreakRisk: 95.8,
+        recentReportedCases: 15,
+        weatherCondition: "Extreme weather",
+        priorityLevel: "High",
+        waterQuality: "Critically contaminated",
+        recommendedAction: "Immediate emergency response"
+      },
+      {
+        id: "polygon-15",
+        name: "Zone O - Large Green",
+        positions: [
+          [21.072576, 79.064600], // Node55
+          [21.072416, 79.065629], // Node29
+          [21.072756, 79.065672], // Node28
+          [21.072696, 79.066059], // Node27
+          [21.072631, 79.066418], // Node26
+          [21.072571, 79.066826], // Node24
+          [21.071495, 79.066676], // Node35
+          [21.071665, 79.065511], // Node17
+          [21.071845, 79.064385], // Node41
+          [21.072171, 79.064144], // Node47
+          [21.072576, 79.064600], // Node55 (closing)
+        ],
+        color: 'green',
+        fillColor: 'lightgreen',
+        averageOutbreakRisk: 11.2,
+        recentReportedCases: 0,
+        weatherCondition: "Clear skies",
+        priorityLevel: "Low",
+        waterQuality: "Good quality",
+        recommendedAction: "Continue routine monitoring"
+      }
+    ];
+
+    // Function to handle polygon click
+    const handlePolygonClick = (polygonData) => {
+      setSelectedPolygon(polygonData);
+      setShowPolygonInfo(true);
+    };
+
+    // Function to close polygon info
+    const closePolygonInfo = () => {
+      setShowPolygonInfo(false);
+      setSelectedPolygon(null);
+    };
 
       function MyComponent() {
       const map = useMapEvents({
@@ -1337,237 +1696,22 @@
   pathOptions={{ color: 'red' }}
 />
 
-  <Polygon
-    positions={[
-      [21.072451, 79.067663], // Node23
-      [21.072551, 79.069261], // Node67
-      [21.072176, 79.069309], // Node68
-      [21.070994, 79.069374], // Node73
-      [21.070689, 79.069374], // Node80
-      [21.070659, 79.068746], // Node79
-      [21.070479, 79.067856], // Node87
-      [21.070015, 79.067354], // Node11
-      
-      [21.072451, 79.067663], // Node23 again to close
-    ]}
-    pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3 }}
-  />
-
-          
-          {/* Hardcoded polygon for nodes 24, 23, 35, 36, 15 */}
-          <Polygon
-    positions={[
-      [21.072571, 79.066826], // Node24
-      [21.072451, 79.067663], // Node23
-      [21.072095, 79.067609], // Node38
-      [21.071775, 79.067550], // Node37
-      [21.071395, 79.067521], // Node15
-      [21.071435, 79.067078], // Node36
-      [21.071495, 79.066676], // Node35
-      [21.071880, 79.066724], // Node34
-      [21.072236, 79.066788], // Node25
-    ]}
-    pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.070015, 79.067354], // Node11
-      [21.070479, 79.067856], // Node87
-      [21.070659, 79.068746], // Node79
-      [21.070689, 79.069374], // Node80
-      [21.070614, 79.069658], // Node81
-      [21.070534, 79.070559], // Node82
-      [21.070544, 79.071267], // Node78
-      [21.069708, 79.072185], // Node93
-      [21.069568, 79.071112], // Node94
-      [21.069860, 79.068613], // Node16
-      [21.070015, 79.067354], // Node11 (close polygon)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.4 }}
-  />
-  <Polygon
-    positions={[
-      [21.073317, 79.069218], // Node63
-      [21.073357, 79.069594], // Node64
-      [21.073392, 79.069969], // Node65
-      [21.073412, 79.070302], // Node66
-      [21.072281, 79.070420], // Node71
-      [21.072246, 79.070077], // Node70
-      [21.072231, 79.069690], // Node69
-      [21.072551, 79.069261], // Node67
-      [21.073317, 79.069218], // Node63 again to close
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.072551, 79.069261], // Node67
-      [21.072231, 79.069690], // Node69
-      [21.070944, 79.069787], // Node74
-      [21.070614, 79.069658], // Node81
-      [21.070689, 79.069374], // Node80
-      [21.070994, 79.069374], // Node73
-      [21.072176, 79.069309], // Node68
-      [21.072551, 79.069261], // Node67 again to close
-    ]}
-    pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.072231, 79.069690], // Node69
-      [21.072246, 79.070077], // Node70
-      [21.072281, 79.070420], // Node71
-      [21.071580, 79.070500], // Node72
-      [21.070819, 79.070763], // Node77
-      [21.070544, 79.071267], // Node78
-      [21.070534, 79.070559], // Node82
-      [21.070614, 79.069658], // Node81
-      [21.070944, 79.069787], // Node74
-      [21.072231, 79.069690], // Node69 again to close
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.071395, 79.067521], // Node15
-      [21.070015, 79.067354], // Node11
-      [21.067926, 79.066375], // Node62
-      [21.067962, 79.066011], // Node14
-      [21.067991, 79.065570], // Node61
-      [21.068086, 79.064541], // Node60
-      [21.068407, 79.064586], // Node8
-      [21.068837, 79.064682], // Node7
-      [21.069256, 79.064727], // Node5
-      [21.070308, 79.065248], // Node2
-      [21.070579, 79.066300], // Node57
-      [21.070829, 79.066595], // Node21
-      [21.071495, 79.066676], // Node35
-      [21.071435, 79.067078], // Node36
-      [21.071395, 79.067521], // Node15 again to close
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.069256, 79.064727], // Node5
-      [21.070394, 79.064868], // Node52
-      [21.071019, 79.064964], // Node53
-      [21.071179, 79.065055], // Node44
-      [21.071665, 79.065511], // Node17
-      [21.071250, 79.065469], // Node18
-      [21.070747, 79.065341], // Node1
-      [21.070308, 79.065248], // Node2
-      [21.069256, 79.064727], // Node5 again to close
-    ]}
-    pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.071665, 79.065511], // Node17
-      [21.071635, 79.065903], // Node33
-      [21.071565, 79.066305], // Node19
-      [21.071495, 79.066676], // Node35
-      [21.071096, 79.066184], // Node95
-      [21.070747, 79.065341], // Node1
-      [21.071665, 79.065511], // Node17 (close polygon)
-    ]}
-    pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.070747, 79.065341], // Node1
-      [21.071096, 79.066184], // Node95
-      [21.071495, 79.066676], // Node35
-      [21.070829, 79.066595], // Node21
-      [21.070579, 79.066300], // Node57
-      [21.070308, 79.065248], // Node2
-      [21.070747, 79.065341], // Node1 (close polygon)
-    ]}
-    pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.071775, 79.064771], // Node40
-      [21.071845, 79.064385], // Node41
-      [21.071310, 79.064288], // Node42
-      [21.071235, 79.064664], // Node43
-      [21.071775, 79.064771], // Node40 (close polygon)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.071665, 79.065511], // Node17
-      [21.071720, 79.065147], // Node39
-      [21.071775, 79.064771], // Node40
-      [21.071235, 79.064664], // Node43
-      [21.071019, 79.064964], // Node53
-      [21.071665, 79.065511], // Node17 (close polygon)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.072211, 79.063371], // Node45
-      [21.072211, 79.063532], // Node46
-      [21.072171, 79.064144], // Node47
-      [21.071845, 79.064385], // Node41
-      [21.071310, 79.064288], // Node42
-      [21.071204, 79.063972], // Node49
-      [21.071159, 79.063505], // Node48
-      [21.072211, 79.063371], // Node45 (close polygon)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.072211, 79.063371], // Node45
-      [21.070789, 79.063307], // Node50
-      [21.070729, 79.063489], // Node51
-      [21.071159, 79.063505], // Node48
-      [21.072211, 79.063371], // Node45 (close polygon)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.070729, 79.063489], // Node51
-      [21.070394, 79.064868], // Node52
-      [21.071019, 79.064964], // Node53
-      [21.071235, 79.064664], // Node43
-      [21.071310, 79.064288], // Node42
-      [21.071204, 79.063972], // Node49
-      [21.071159, 79.063505], // Node48
-      [21.070729, 79.063489], // Node51 (closing)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.072576, 79.064600], // Node55
-      [21.072911, 79.064573], // Node54
-      [21.072756, 79.065672], // Node28
-      [21.072416, 79.065629], // Node29
-      [21.072576, 79.064600], // Node55 (closing)
-    ]}
-    pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.3 }}
-  />
-  <Polygon
-    positions={[
-      [21.072576, 79.064600], // Node55
-      [21.072416, 79.065629], // Node29
-      [21.072756, 79.065672], // Node28
-      [21.072696, 79.066059], // Node27
-      [21.072631, 79.066418], // Node26
-      [21.072571, 79.066826], // Node24
-      [21.071495, 79.066676], // Node35
-      [21.071665, 79.065511], // Node17
-      [21.071845, 79.064385], // Node41
-      [21.072171, 79.064144], // Node47
-      [21.072576, 79.064600], // Node55 (closing)
-    ]}
-    pathOptions={{ color: 'green', fillColor: 'lightgreen', fillOpacity: 0.3 }}
-  />
+          {/* Dynamic Polygons with Click Handlers */}
+          {polygonData.map((polygon) => (
+            <Polygon
+              key={polygon.id}
+              positions={polygon.positions}
+              pathOptions={{ 
+                color: polygon.color, 
+                fillColor: polygon.fillColor, 
+                fillOpacity: 0.3,
+                weight: 2
+              }}
+              eventHandlers={{
+                click: () => handlePolygonClick(polygon)
+              }}
+            />
+          ))}
 
 
 
@@ -1605,6 +1749,64 @@
             ))}
           </MarkerClusterGroup>
         </MapContainer>
+        
+        {/* Polygon Information Popup/Sidebar */}
+        {showPolygonInfo && selectedPolygon && (
+          <div className="polygon-info-overlay">
+            <div className="polygon-info-popup">
+              <div className="polygon-info-header">
+                <h3>{selectedPolygon.name}</h3>
+                <button 
+                  className="close-button" 
+                  onClick={closePolygonInfo}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="polygon-info-content">
+                <div className="info-row">
+                  <span className="parameter">Location (Node name or ID)</span>
+                  <span className="value">{selectedPolygon.name}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Average Outbreak Risk (%)</span>
+                  <span className="value">{selectedPolygon.averageOutbreakRisk}%</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Recent Reported Cases</span>
+                  <span className="value">{selectedPolygon.recentReportedCases}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Weather Condition</span>
+                  <span className="value">{selectedPolygon.weatherCondition}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Priority Level</span>
+                  <span className="value priority">
+                    <span className={`priority-dot priority-${selectedPolygon.priorityLevel.toLowerCase()}`}></span>
+                    {selectedPolygon.priorityLevel}
+                  </span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Water Quality</span>
+                  <span className="value">{selectedPolygon.waterQuality}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Recommended Action</span>
+                  <span className="value">{selectedPolygon.recommendedAction}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
       </div>
     );
