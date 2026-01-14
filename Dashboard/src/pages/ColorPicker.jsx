@@ -31,9 +31,11 @@ const ColorPicker = () => {
       uploadBytes(storageRef, selectedFile).then(() => {
         setUploadSuccess(true); // Set the upload success state
       }).catch((error) => {
+        // eslint-disable-next-line no-console
         console.error('Error uploading file:', error);
       });
     } else {
+      // eslint-disable-next-line no-console
       console.error('No file selected');
     }
   };

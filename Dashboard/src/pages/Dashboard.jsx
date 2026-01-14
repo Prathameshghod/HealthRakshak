@@ -47,6 +47,7 @@ const Dashboard = () => {
           setReportedComplaints(snapshot5.val());
         }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching data:', error);
       }
     };

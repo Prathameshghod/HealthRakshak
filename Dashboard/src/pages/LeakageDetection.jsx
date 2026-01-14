@@ -13,6 +13,7 @@ const LeakageDetection = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!file) {
+      // eslint-disable-next-line no-alert
       alert('Please select a file');
       return;
     }
@@ -35,7 +36,9 @@ const LeakageDetection = () => {
         setShowModal(true);
       }
     } catch (error) {
+      // eslint-disable-next-line no-alert
       alert('An error occurred while processing the file');
+      // eslint-disable-next-line no-console
       console.error(error);
     } finally {
       setIsLoading(false);

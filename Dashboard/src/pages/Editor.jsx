@@ -18,6 +18,7 @@ const Editor = () => {
       const snapshot = await get(refObj);
       return snapshot.exists() ? snapshot.val() : 0;
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error getting reportedComplains:', error);
       return 0;
     }
@@ -27,6 +28,7 @@ const Editor = () => {
     try {
       await set(refObj, value);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error updating reportedComplains:', error);
     }
   };
@@ -54,6 +56,7 @@ const Editor = () => {
       setComplain('');
       setImageBase64('');
       // Clear image after saving
+      // eslint-disable-next-line no-alert
       alert('Data Added Successfully');
     } catch (error) {
       console.error(error);

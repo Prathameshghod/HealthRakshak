@@ -12,6 +12,7 @@ const SensorAllocation = () => {
     event.preventDefault();
 
     if (!file) {
+      // eslint-disable-next-line no-alert
       alert('Please select a file to upload.');
       return;
     }
@@ -31,6 +32,7 @@ const SensorAllocation = () => {
         });
       })
       .catch((error) => {
+        // eslint-disable-next-line no-console
         console.error('Error fetching data:', error);
       });
   };

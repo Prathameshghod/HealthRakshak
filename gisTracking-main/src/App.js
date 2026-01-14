@@ -43,18 +43,27 @@
       popUp: "",
     });
 
+    // eslint-disable-next-line no-unused-vars
     const [currentZoom, setCurrentZoom] = useState(20);
+    // eslint-disable-next-line no-unused-vars
     const CLUSTERING_ZOOM_THRESHOLD = 18; // Cluster below zoom 18, uncluster at 18+
     
     // State for polygon popup/sidebar
     const [selectedPolygon, setSelectedPolygon] = useState(null);
     const [showPolygonInfo, setShowPolygonInfo] = useState(false);
+    
+    // State for deep insights mode
+    const [showDeepInsights, setShowDeepInsights] = useState(false);
+    
+    // State for polyline popup
+    const [selectedPolyline, setSelectedPolyline] = useState(null);
+    const [showPolylineInfo, setShowPolylineInfo] = useState(false);
 
     // Polygon data with dummy outbreak risk information - matching the screenshot colors
     const polygonData = [
       {
         id: "polygon-1",
-        name: "Zone A - North Sector",
+        name: "Dharampeth - Zone A",
         positions: [
           [21.072451, 79.067663], // Node23
           [21.072551, 79.069261], // Node67
@@ -77,7 +86,7 @@
       },
       {
         id: "polygon-2", 
-        name: "Zone B - High Risk Area",
+        name: "Dharampeth - Zone B",
         positions: [
           [21.072571, 79.066826], // Node24
           [21.072451, 79.067663], // Node23
@@ -100,7 +109,7 @@
       },
       {
         id: "polygon-3",
-        name: "Zone C - South Sector", 
+        name: "Dharampeth - Zone C", 
         positions: [
           [21.070015, 79.067354], // Node11
           [21.070479, 79.067856], // Node87
@@ -125,7 +134,7 @@
       },
       {
         id: "polygon-4",
-        name: "Zone D - Upper Right",
+        name: "Dharampeth - Zone D",
         positions: [
           [21.073317, 79.069218], // Node63
           [21.073357, 79.069594], // Node64
@@ -148,7 +157,7 @@
       },
       {
         id: "polygon-5",
-        name: "Zone E - Central Orange",
+        name: "Dharampeth - Zone E",
         positions: [
           [21.072551, 79.069261], // Node67
           [21.072231, 79.069690], // Node69
@@ -170,7 +179,7 @@
       },
       {
         id: "polygon-6",
-        name: "Zone F - South Green",
+        name: "Dharampeth - Zone F",
         positions: [
           [21.072231, 79.069690], // Node69
           [21.072246, 79.070077], // Node70
@@ -194,7 +203,7 @@
       },
       {
         id: "polygon-7",
-        name: "Zone G - Central Large",
+        name: "Dharampeth - Zone G",
         positions: [
           [21.071395, 79.067521], // Node15
           [21.070015, 79.067354], // Node11
@@ -223,7 +232,7 @@
       },
       {
         id: "polygon-8",
-        name: "Zone H - East Orange",
+        name: "Dharampeth - Zone H",
         positions: [
           [21.069256, 79.064727], // Node5
           [21.070394, 79.064868], // Node52
@@ -246,7 +255,7 @@
       },
       {
         id: "polygon-9",
-        name: "Zone I - High Risk Red",
+        name: "Dharampeth - Zone I",
         positions: [
           [21.071665, 79.065511], // Node17
           [21.071635, 79.065903], // Node33
@@ -267,7 +276,7 @@
       },
       {
         id: "polygon-10",
-        name: "Zone J - West Orange",
+        name: "Dharampeth - Zone J",
         positions: [
           [21.070747, 79.065341], // Node1
           [21.071096, 79.066184], // Node95
@@ -288,7 +297,7 @@
       },
       {
         id: "polygon-11",
-        name: "Zone K - Safe Area",
+        name: "Dharampeth - Zone K",
         positions: [
           [21.071775, 79.064771], // Node40
           [21.071845, 79.064385], // Node41
@@ -307,7 +316,7 @@
       },
       {
         id: "polygon-12",
-        name: "Zone L - Industrial Area",
+        name: "Dharampeth - Zone L",
         positions: [
           [21.071665, 79.065511], // Node17
           [21.071720, 79.065147], // Node39
@@ -327,7 +336,7 @@
       },
       {
         id: "polygon-13",
-        name: "Zone M - Residential North",
+        name: "Dharampeth - Zone M",
         positions: [
           [21.072211, 79.063371], // Node45
           [21.072211, 79.063532], // Node46
@@ -349,7 +358,7 @@
       },
       {
         id: "polygon-14",
-        name: "Zone N - Critical Red",
+        name: "Dharampeth - Zone N",
         positions: [
           [21.072576, 79.064600], // Node55
           [21.072911, 79.064573], // Node54
@@ -368,7 +377,7 @@
       },
       {
         id: "polygon-15",
-        name: "Zone O - Large Green",
+        name: "Dharampeth - Zone O",
         positions: [
           [21.072576, 79.064600], // Node55
           [21.072416, 79.065629], // Node29
@@ -404,9 +413,34 @@
       setShowPolygonInfo(false);
       setSelectedPolygon(null);
     };
+    
+    // Function to handle polyline click
+    const handlePolylineClick = (polylineIndex, polylinePositions) => {
+      // Generate dummy data for water leakage, pilferage, and quality
+      const polylineData = {
+        id: `polyline-${polylineIndex}`,
+        name: `Pipeline Segment ${polylineIndex + 1}`,
+        positions: polylinePositions,
+        waterLeakage: (Math.random() * 100).toFixed(1) + '%',
+        pilferage: (Math.random() * 50).toFixed(1) + '%',
+        waterQuality: ['Excellent', 'Good', 'Fair', 'Poor'][Math.floor(Math.random() * 4)],
+        pressureLevel: (Math.random() * 100).toFixed(1) + ' PSI',
+        flowRate: (Math.random() * 50).toFixed(2) + ' L/min',
+        lastInspection: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        recommendedAction: ['Maintain current monitoring', 'Schedule maintenance', 'Immediate inspection required'][Math.floor(Math.random() * 3)]
+      };
+      setSelectedPolyline(polylineData);
+      setShowPolylineInfo(true);
+    };
+    
+    // Function to close polyline info
+    const closePolylineInfo = () => {
+      setShowPolylineInfo(false);
+      setSelectedPolyline(null);
+    };
 
       function MyComponent() {
-      const map = useMapEvents({
+      useMapEvents({
         click(e) {
           console.log("component used");
           const { lat, lng } = e.latlng;
@@ -897,8 +931,8 @@
         [21.072756, 79.065672], // Node28
       ],
       [
-      [21.072756, 79.065672], // Node28
-      [21.072696, 79.066059], // Node27
+        [21.072756, 79.065672], // Node28
+        [21.072696, 79.066059], // Node27
     ],
     [
       [21.072696, 79.066059], // Node27
@@ -1230,6 +1264,7 @@
     };
 
     const handleMapClick = (e) => {
+      // eslint-disable-next-line no-console
       console.log("Using the function");
       const { lat, lng } = e.latlng;
       
@@ -1239,10 +1274,13 @@
         longitude: lng.toFixed(6),
         popUp: "", // Clear the popUp field when clicking on the map
       });
-      console.log(userCoordinates.latitude)
+      // eslint-disable-next-line no-console
+      console.log(userCoordinates.latitude);
+      // eslint-disable-next-line no-console
       console.log(userCoordinates.longitude)
     };
 
+    // eslint-disable-next-line no-unused-vars
     const handleSetLatitude = () => {
       setUserCoordinates({
         ...userCoordinates,
@@ -1251,6 +1289,7 @@
     };
 
     const handleMarkerClick = (coordinates) => {
+      // eslint-disable-next-line no-console
       console.log(`Clicked Marker: Lat ${coordinates[0]}, Lng ${coordinates[1]}`);
       setCurrentPolylineEnd({
           latitude:coordinates[0],
@@ -1260,6 +1299,7 @@
     };
 
 
+    // eslint-disable-next-line no-unused-vars
     const getCoordinatesAsJSON = () => {
       const coordinatesJSON = markers.map((marker) => ({
         latitude: marker.geocode[0],
@@ -1371,317 +1411,56 @@
           }
         />
         <button onClick={handleAddPolyline}>Add Polyline</button>
+        <button 
+          onClick={() => setShowDeepInsights(!showDeepInsights)}
+          style={{
+            marginLeft: '10px',
+            padding: '8px 16px',
+            backgroundColor: showDeepInsights ? '#dc3545' : '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          {showDeepInsights ? 'Hide Deep Insights' : 'Deep Insights'}
+        </button>
 
         <MapContainer center={[21.069082, 79.065665]} zoom={20}>
           <MyComponent />
+          {/* Only show blue polylines */}
           {userPolylines.map((polyline, index) => (
-            <Polyline key={index} positions={polyline} color="blue" />
+            <Polyline 
+              key={index} 
+              positions={polyline} 
+              pathOptions={{
+                color: "blue",
+                weight: 4,
+                opacity: 0.8
+              }}
+              eventHandlers={{
+                click: () => handlePolylineClick(index, polyline),
+                mouseover: (e) => {
+                  const layer = e.target;
+                  layer.setStyle({
+                    weight: 6,
+                    opacity: 1
+                  });
+                },
+                mouseout: (e) => {
+                  const layer = e.target;
+                  layer.setStyle({
+                    weight: 4,
+                    opacity: 0.8
+                  });
+                }
+              }}
+            />
           ))}
-          {/* Red polyline between Node34 and Node37 */}
-          <Polyline
-            positions={[
-              [21.071880, 79.066724], // Node34
-              [21.071775, 79.067550], // Node37
-            ]}
-            color="red"
-            weight={4}
-          />
-          <Polyline
-            positions={[[21.072095, 79.067609],
-        [21.072236, 79.066788]]}
-            color="red"
-            weight={4}
-          />
-          {/* Polyline: 87 → 88 → 89 → 90 → 86 */}
-  <Polyline positions={[[21.070479,79.067856],[21.070348,79.068660]]} color="green" />
-  <Polyline positions={[[21.070348,79.068660],[21.070258,79.069572]]} color="green" />
-  <Polyline positions={[[21.070258,79.069572],[21.070133,79.070500]]} color="green" />
-  <Polyline positions={[[21.070133,79.070500],[21.070163,79.071198]]} color="green" />
 
-  {/* Polyline: 79 → 88 → 16 */}
-  <Polyline positions={[[21.070659,79.068746],[21.070348,79.068660]]} color="green" />
-  <Polyline positions={[[21.070348,79.068660],[21.069860,79.068613]]} color="green" />
-
-  {/* Polyline: 82 → 83 → 90 */}
-  <Polyline positions={[[21.070534,79.070559],[21.070414,79.070543]]} color="green" />
-  <Polyline positions={[[21.070414,79.070543],[21.070133,79.070500]]} color="green" />
-
-  {/* Polyline: 83 → 84 */}
-  <Polyline positions={[[21.070414,79.070543],[21.070338,79.071219]]} color="green" />
-
-  {/* Polyline: 78 → 84 → 86 → 92 → 94 */}
-  <Polyline positions={[[21.070544,79.071267],[21.070338,79.071219]]} color="green" />
-  <Polyline positions={[[21.070338,79.071219],[21.070163,79.071198]]} color="green" />
-  <Polyline positions={[[21.070163,79.071198],[21.069848,79.071139]]} color="green" />
-  <Polyline positions={[[21.069848,79.071139],[21.069568,79.071112]]} color="green" />
-
-  <Polyline
-    positions={[
-      [21.072211, 79.063532], // Node46
-      [21.071159, 79.063505], // Node48
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  <Polyline
-    positions={[
-      [21.072171, 79.064144], // Node47
-      [21.071204, 79.063972], // Node49
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  <Polyline
-    positions={[
-      [21.072416, 79.065629], // Node29
-      [21.072055, 79.06556], // Node30
-      [21.071665, 79.065511], // Node17
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  <Polyline
-    positions={[
-      [21.072136,79.065045], // Node32
-      [21.072055, 79.06556], // Node30
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  <Polyline
-    positions={[
-      [21.072696, 79.066059], // Node27
-      [21.071635, 79.065903], // Node33
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  <Polyline
-    positions={[
-      [21.072631, 79.066418], // Node26
-      [21.071565, 79.066305], // Node19
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  {/* 36 → 22 */}
-  <Polyline
-    positions={[
-      [21.071435, 79.067078], // Node36
-      [21.070744, 79.066949], // Node22
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-
-  <Polyline
-    positions={[
-      [21.070545, 79.06682], // Node10
-      [21.070102, 79.066756], // Node9
-      [21.070102,79.066756],
-      [21.069682,79.066709],
-      [21.067926,79.066375]
-    ]}
-    pathOptions={{ color: 'green' }}
-  />
-  <Polyline
-  positions={[
-    [21.070308, 79.065248], // Node 2
-    [21.070211, 79.065853], // Node 3
-    [21.070102, 79.066756], // Node 9
-    [21.070015, 79.067354], // Node 11
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.070579,79.0663], // Node 57
-    [21.070183,79.066257], // Node 58
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.070211,79.065853], // Node 57
-    [21.069082,79.065665],
-    [21.068633,79.065626],
-    [21.068316,79.065603],
-    [21.067991,79.06557] // Node 58
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.069764,79.066254], // Node 57
-    [21.067962,79.066011], // Node 58
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-
-<Polyline
-  positions={[
-    [21.069764,79.066254], // Node 57
-    [21.069682,79.066709], // Node 58
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-
-<Polyline
-  positions={[
-    [21.069256,79.064727],
-    [21.069082,79.065665], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.068837,79.064682], 
-    [21.068633,79.065626], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.068407,79.064586], 
-    [21.068316,79.065603], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.07172,79.065147], 
-    [21.071179,79.065055], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.073357,79.069594], 
-    [21.072231,79.06969], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-
-<Polyline
-  positions={[
-    [21.073392,79.069969], 
-    [21.072246,79.070077], 
-    [21.070879,79.070173]
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.072176,79.069309], 
-    [21.072231,79.06969], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.07158,79.0705], 
-    [21.070844,79.070516], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[ 
-    [21.070994,79.069374], 
-    [21.070944,79.069787],
-    [21.070879,79.070173],
-    [21.070844,79.070516],
-    [21.070819,79.070763] 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.069848,79.071139], 
-    [21.069708,79.072185], 
-  ]}
-  pathOptions={{ color: 'green' }}
-/>
-<Polyline
-  positions={[
-    [21.072176,79.069309], 
-    [21.072231,79.06969], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-<Polyline
-  positions={[
-    [21.070994,79.069374], 
-    [21.070944,79.069787], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-<Polyline
-  positions={[
-    [21.072095,79.067609], 
-    [21.072176,79.069309], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-<Polyline
-  positions={[
-    [21.071775,79.06755], 
-    [21.070994,79.069374], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-<Polyline
-  positions={[
-    [21.071395,79.067521], 
-    [21.070659,79.068746], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-
-<Polyline
-  positions={[
-    [21.070394,79.064868], 
-    [21.070308,79.065248], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-
-<Polyline
-  positions={[
-    [21.070747,79.065341], 
-    [21.070579,79.0663], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-
-<Polyline
-  positions={[
-    [21.071096,79.066184], 
-    [21.070844,79.066177], 
-  ]}
-  pathOptions={{ color: 'orange' }}
-/>
-
-<Polyline
-  positions={[
-    [21.07125,79.065469], 
-    [21.071179,79.065892], 
-    [21.071096,79.066184]
-  ]}
-  pathOptions={{ color: 'red' }}
-/>
-
-<Polyline
-  positions={[
-    [21.071635,79.065903], 
-    [21.071179,79.065892], 
-  ]}
-  pathOptions={{ color: 'red' }}
-/>
-<Polyline
-  positions={[
-    [21.071565,79.066305], 
-    [21.071096,79.066184], 
-  ]}
-  pathOptions={{ color: 'red' }}
-/>
-
-
-
-          {/* Dynamic Polygons with Click Handlers */}
-          {polygonData.map((polygon) => (
+          {/* Dynamic Polygons with Click Handlers - Only show when Deep Insights is active */}
+          {showDeepInsights && polygonData.map((polygon) => (
             <Polygon
               key={polygon.id}
               positions={polygon.positions}
@@ -1786,6 +1565,66 @@
                 <div className="info-row">
                   <span className="parameter">Recommended Action</span>
                   <span className="value">{selectedPolygon.recommendedAction}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Polyline Information Popup/Sidebar */}
+        {showPolylineInfo && selectedPolyline && (
+          <div className="polygon-info-overlay">
+            <div className="polygon-info-popup">
+              <div className="polygon-info-header">
+                <h3>{selectedPolyline.name}</h3>
+                <button 
+                  className="close-button" 
+                  onClick={closePolylineInfo}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="polygon-info-content">
+                <div className="info-row">
+                  <span className="parameter">Location (Pipeline Segment)</span>
+                  <span className="value">{selectedPolyline.name}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Water Leakage (%)</span>
+                  <span className="value">{selectedPolyline.waterLeakage}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Pilferage (%)</span>
+                  <span className="value">{selectedPolyline.pilferage}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Water Quality</span>
+                  <span className="value">{selectedPolyline.waterQuality}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Pressure Level</span>
+                  <span className="value">{selectedPolyline.pressureLevel}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Flow Rate</span>
+                  <span className="value">{selectedPolyline.flowRate}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Last Inspection</span>
+                  <span className="value">{selectedPolyline.lastInspection}</span>
+                </div>
+                
+                <div className="info-row">
+                  <span className="parameter">Recommended Action</span>
+                  <span className="value">{selectedPolyline.recommendedAction}</span>
                 </div>
               </div>
             </div>

@@ -41,6 +41,7 @@ const GisTracking = () => {
           setVariable5Value(snapshot5.val());
         }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching data:', error);
       }
     };
